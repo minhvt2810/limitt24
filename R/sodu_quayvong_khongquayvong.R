@@ -1,19 +1,19 @@
 
-calculate_sodu <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,output_save) {
+calculate_sodu <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,limit,output_save) {
   #nhập sao kê
   options(scipen = 999)
-  
+
   data_sktd2 <- read.delim(sktd,sep =delimiter) %>% clean_names()
   data_thauchi2 <- read.delim(thauchi,sep =delimiter) %>% clean_names()
   data_thauchi_quahan2 <- read.delim(thauchiquahan,sep =delimiter) %>% clean_names()
   data_card2 <- read.delim(card,sep =delimiter) %>% clean_names()
-  data_md2 <- read.delim(baolanh,sep =delimiter) %>% 
+  data_md2 <- read.delim(baolanh,sep =delimiter) %>%
     clean_names()##để lại delimiter theo $
   data_lc2 <- read.delim(lc,sep =delimiter) %>% clean_names()
-  
+
   #tính sao kê tín dụng
-  
-  data_sktd_20260429_2 <- data_sktd2 %>% 
+
+  data_sktd_20260429_2 <- data_sktd2 %>%
     select(txn_date,customer,co_code
            #,vn_full_name
            ,limit_refference,ld_id,amount_lcy) %>% distinct() %>%
@@ -50,9 +50,9 @@ calculate_sodu <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,
              #,vn_full_name
              ,loaiduno) %>%
     summarise(duno = sum(amount_lcy))
-  
+
   #tính sao kê thấu chi
-  data_thauchi_20260429_2 <- data_thauchi2 %>% 
+  data_thauchi_20260429_2 <- data_thauchi2 %>%
     select(mov_date,customer,co_code
            #,account_title_1
            ,so_taikhoan,working_balance) %>%
@@ -66,9 +66,9 @@ calculate_sodu <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,
              #,account_title_1
              ,loaiduno) %>%
     summarise(duno=sum(duno))
-  
+
   # tính sao kê thấu chi quá hạn
-  data_thauchi_quahan_20260429_2 <- data_thauchi_quahan2 %>% 
+  data_thauchi_quahan_20260429_2 <- data_thauchi_quahan2 %>%
     select(txn_date,customer,co_code
            #,vn_full_name
            ,limit_refference,ld_id,amount_lcy) %>%
@@ -82,7 +82,7 @@ calculate_sodu <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,
              #,vn_full_name
              ,loaiduno) %>%
     summarise(duno = sum(amount_lcy))
-  
+
   #tính sao kê thẻ visa
   data_visa_20260429_2 <- data_card2 %>%
     select(txn_date,cif,branch_code_t24
@@ -98,7 +98,7 @@ calculate_sodu <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,
              #,contract_name
              ,loaiduno) %>%
     summarise(duno = sum(current_bal))
-  
+
   #tổng hợp cho vay
   data_vay_quayvong_khongquayvong <- sqldf(
     "with a as (select cate,customer
@@ -125,10 +125,10 @@ calculate_sodu <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,
                         --,vn_full_name
                         ,loaiduno
                     ")
-  
+
   data_vay_quayvong_khongquayvong_2 <- data_vay_quayvong_khongquayvong %>% filter(customer != "0") %>%
     pivot_wider(names_from = loaiduno,values_from = duno)
-  
+
   #tính sao kê bảo lãnh
   data_md_20260429_2 <- data_md2 %>% select(txn_date,customer,principal_amount=giatri_con_lai_quydoi
                                             ,currency,limit_reference) %>%
@@ -165,11 +165,11 @@ calculate_sodu <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,
     ) %>%
     group_by(cate,customer,loaiduno) %>%
     summarise(dubaolanh = sum(principal_amount))
-  
-  
+
+
   data_baolanh_quayvong_khongquayvong <- data_md_20260429_2 %>%
     pivot_wider(names_from = loaiduno,values_from = dubaolanh)
-  
+
   #tính sao kê lc
   data_lc_20260429_2 <- data_lc2 %>%
     mutate(customer = as.character(cif_id)
@@ -205,29 +205,29 @@ calculate_sodu <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,
     ) %>%
     group_by(cate,customer,loaiduno) %>%
     summarise(dulc = sum(os_lc_amount))
-  
+
   data_lc_quayvong_khongquayvong <- data_lc_20260429_2 %>% filter(customer !="null") %>%
     pivot_wider(names_from = loaiduno,values_from = dulc)
-  
-  
+
+
   #gộp với hạn mức
-  
-  gophanmuc <- sum_all_kh %>% left_join(data_vay_quayvong_khongquayvong_2 %>% 
+
+  gophanmuc <- limit %>% left_join(data_vay_quayvong_khongquayvong_2 %>%
                                           select(customer,duno_khongquayvong=khongquayvong
                                                  ,duno_quayvong=quayvong)
                                         ,by = c("LIABILITY_NUMBER"="customer")) %>%
-    left_join(data_baolanh_quayvong_khongquayvong %>% 
+    left_join(data_baolanh_quayvong_khongquayvong %>%
                 select(customer,baolanh_khongquayvong=khongquayvong
                        ,dbaolanh_quayvong=quayvong)
               ,by = c("LIABILITY_NUMBER"="customer")
     ) %>%
-    left_join(data_lc_quayvong_khongquayvong %>% 
+    left_join(data_lc_quayvong_khongquayvong %>%
                 select(customer,lc_khongquayvong=khongquayvong
                        ,lc_quayvong=quayvong)
               ,by = c("LIABILITY_NUMBER"="customer")) %>%
     select(everything(),-`cate.y`,-`cate.x`,-total_hm_quayvong_conlai,-total_hm_khongquayvong_conlai
            ,-total_hm_conlai)
-  
+
   # in ra excel
   write.xlsx(gophanmuc,output_save,colNames = TRUE)
 }
