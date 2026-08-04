@@ -1,5 +1,5 @@
 
-calculate_sodu <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,limit,output_save) {
+sodu_quayvong_khongquayvong <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,limit,output_save) {
   #nhập sao kê
   options(scipen = 999)
 
