@@ -1,3 +1,11 @@
+library(dplyr)
+library(sqldf)
+library(readxl)
+library(openxlsx)
+library(tidyr)
+library(stringr)
+library(stringi)
+
 
 sodu_quayvong_khongquayvong <- function(sktd,thauchi,thauchiquahan,card,baolanh,lc,delimiter,limit,output_save) {
   #nhập sao kê
