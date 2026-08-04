@@ -10,12 +10,9 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
 Imports: 
-    creditmodel,
     dplyr,
-    mltools,
     openxlsx,
     readxl,
     sqldf,
     stringi,
     stringr,
-    tidyr
