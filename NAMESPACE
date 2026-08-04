@@ -1,2 +1,2 @@
-export(limitt24)
+export(read_sklimit)
 export(sodu_quayvong_khongquayvong)
